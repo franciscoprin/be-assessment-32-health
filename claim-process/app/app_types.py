@@ -27,3 +27,21 @@ class ClaimPayload(BaseModel):
         if not re.match(r'^\d{10}$', value):
             raise ValueError('Provider NPI must be a 10-digit number')
         return value
+
+    # Use ConfigDict instead of the Config class
+    class ConfigDict:
+        # Move the example data to json_schema_extra to avoid deprecation
+        schema_extra = {
+            "example": {
+                "service_date": "2024-01-14",
+                "submitted_procedure": "D12345",
+                "quadrant": "Upper Left",
+                "plan_group": "HMO1234",
+                "subscriber": "S123456789",
+                "provider_npi": "1234567890",
+                "provider_fees": 150.75,
+                "allowed_fees": 120.00,
+                "member_coinsurance": 15.00,
+                "member_copay": 10.00
+            }
+        }

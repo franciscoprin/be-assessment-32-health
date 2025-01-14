@@ -1,11 +1,13 @@
-import pytest
 from fastapi.testclient import TestClient
 from ..main import app
+from ..models import Claim
+from sqlmodel import select
+
 
 client = TestClient(app=app)
 
 # Define a test case for valid data
-def test_process_claim_valid():
+def test_process_claim_valid(session):
     payload = {
         "service_date": "2025-01-15",
         "submitted_procedure": "D0180",
@@ -36,8 +38,31 @@ def test_process_claim_valid():
     assert data["member_copay"] == payload["member_copay"]
     assert data["net_fee"] == 0.00  # since provider_fees + member_coinsurance + member_copay - allowed_fees = 0.00
 
+    # Check if the claim was added to the database
+    stmt = select(Claim).where(Claim.id == data["id"])
+    db_claim = session.exec(stmt).first()
+    assert db_claim is not None  # Ensure the claim exists in the database
+    assert db_claim.service_date == payload["service_date"]
+    assert db_claim.submitted_procedure == payload["submitted_procedure"]
+    assert db_claim.quadrant == payload["quadrant"]
+    assert db_claim.plan_group == payload["plan_group"]
+    assert db_claim.subscriber == payload["subscriber"]
+    assert db_claim.provider_npi == payload["provider_npi"]
+    assert db_claim.provider_fees == payload["provider_fees"]
+    assert db_claim.allowed_fees == payload["allowed_fees"]
+    assert db_claim.member_coinsurance == payload["member_coinsurance"]
+    assert db_claim.member_copay == payload["member_copay"]
+    assert db_claim.net_fee == 0.00  # same calculation for net_fee
+
+    # Assert that only one claim exists in the database
+    stmt = select(Claim)
+    results = session.exec(stmt).all()
+    total_claims = len(results)
+
+    assert total_claims == 1  # Check that only one claim has been inserted
+
 # Test when 'submitted_procedure' does not start with 'D'
-def test_process_claim_invalid_procedure():
+def test_process_claim_invalid_procedure(session):
     payload = {
         "service_date": "2025-01-15",
         "submitted_procedure": "A0180",  # Invalid, does not start with 'D'
@@ -65,8 +90,16 @@ def test_process_claim_invalid_procedure():
 
     assert response.status_code == 422
 
+    # Assert that only non claims exist in the database
+    stmt = select(Claim)
+    results = session.exec(stmt).all()
+    total_claims = len(results)
+
+    assert total_claims == 0
+
+
 # Test when 'provider_npi' is not a 10-digit number
-def test_process_claim_invalid_npi():
+def test_process_claim_invalid_npi(session):
     payload = {
         "service_date": "2025-01-15",
         "submitted_procedure": "D0180",
@@ -95,8 +128,15 @@ def test_process_claim_invalid_npi():
 
     assert response.status_code == 422
 
+    # Assert that only non claims exist in the database
+    stmt = select(Claim)
+    results = session.exec(stmt).all()
+    total_claims = len(results)
+
+    assert total_claims == 0
+
 # Test missing required fields
-def test_process_claim_missing_fields():
+def test_process_claim_missing_fields(session):
     payload = {}
     # Notice that quadrant is not a required field
     expected_require_fields = [
@@ -126,3 +166,10 @@ def test_process_claim_missing_fields():
     }
 
     assert response.status_code == 422
+
+    # Assert that only non claims exist in the database
+    stmt = select(Claim)
+    results = session.exec(stmt).all()
+    total_claims = len(results)
+
+    assert total_claims == 0
