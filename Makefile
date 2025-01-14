@@ -1,6 +1,9 @@
 # Define the service name and command to exec
 SERVICE_NAME = claim-process
 CONTAINER_SHELL = /bin/bash  # Use /bin/sh if bash is not available
+DB_CONTAINER = db
+DB_USER = user
+DB_NAME = dbname
 
 # .PHONY target to prevent make from confusing these with filenames
 .PHONY: up down ssh logs build rebuild test help
@@ -40,7 +43,20 @@ rebuild:
 # Run tests using pytest inside the container
 test:
 	@echo "Running tests using pytest inside the container."
-	docker-compose run --rm $(SERVICE_NAME) pytest -s $(file)
+	docker-compose exec $(SERVICE_NAME) pytest -s $(file)
+
+# Connect to the database using psql
+db-connect:
+	docker-compose exec $(DB_CONTAINER) psql -U $(DB_USER) $(DB_NAME)
+
+# Enter the database container's shell
+db-shell:
+	docker-compose exec $(DB_CONTAINER) $(CONTAINER_SHELL)
+
+# Generate a new Alembic migration inside the Docker container
+migrate:
+	@echo "Generating Alembic migration inside the Docker container..."
+	docker-compose exec -T $(SERVICE_NAME) alembic revision --autogenerate -m "$(message)"
 
 # Show available commands and explanations
 help:
