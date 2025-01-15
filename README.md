@@ -47,7 +47,12 @@ import ipdb; ipdb.set_trace()
 
 And then execute the tests with: `make test`.
 
-## Future Optimizations
+## Future Source code optimizations
+* Add [black linting](https://github.com/psf/black)
+* Replace `requirements.txt` with Pipenv (https://docs.pipenv.org/). The lock file will ensure specific versions of each package are used.
+* Utilize GitHub Actions to automate unit tests and coverage checks for every pull request. Implement branch protection rules to block merges if the tests fail or coverage thresholds are not met.
+
+## Future Architecture Optimizations
 
 ### Current Architecture
 At the moment, there are two primary endpoints:
