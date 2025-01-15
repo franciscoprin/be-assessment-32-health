@@ -28,10 +28,8 @@ class ClaimPayload(BaseModel):
             raise ValueError('Provider NPI must be a 10-digit number')
         return value
 
-    # Use ConfigDict instead of the Config class
-    class ConfigDict:
-        # Move the example data to json_schema_extra to avoid deprecation
-        schema_extra = {
+    model_config = {
+        "json_schema_extra": {
             "example": {
                 "service_date": "2024-01-14",
                 "submitted_procedure": "D12345",
@@ -45,3 +43,4 @@ class ClaimPayload(BaseModel):
                 "member_copay": 10.00
             }
         }
+    }
