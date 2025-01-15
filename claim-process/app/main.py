@@ -1,7 +1,12 @@
 from fastapi import FastAPI, HTTPException, Depends
-from app.app_types import ClaimPayload
-from app.database import get_session, init_db
-from app.models import Claim
+try:
+    from app.app_types import ClaimPayload
+    from app.database import get_session, init_db
+    from app.models import Claim
+except ModuleNotFoundError:
+    from app_types import ClaimPayload
+    from database import get_session, init_db
+    from models import Claim
 from sqlalchemy import func
 from sqlmodel import Session
 from contextlib import asynccontextmanager
