@@ -21,6 +21,8 @@ make up
 
 This will start all necessary containers in detached mode (in the background).
 
+Visit [http://localhost:8000/docs](http://localhost:8000/docs) and press the `Try it out` button to play with the APIs.
+
 ### Running Unit Tests
 
 To run the unit tests for the `claim_process` service, use the following command:
