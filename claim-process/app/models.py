@@ -8,9 +8,9 @@ class Claim(SQLModel, table=True):
     quadrant: str | None = None
     plan_group: str
     subscriber: str
-    provider_npi: str
+    provider_npi: str = Field(index=True) 
     provider_fees: float
     allowed_fees: float
     member_coinsurance: float
     member_copay: float
-    net_fee: float
+    net_fee: float = Field(index=True)
