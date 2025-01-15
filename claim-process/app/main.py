@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Depends
 from app.app_types import ClaimPayload
 from app.database import get_session, init_db
 from app.models import Claim
+from sqlalchemy import func
 from sqlmodel import Session
 from contextlib import asynccontextmanager
 
@@ -17,6 +18,30 @@ async def lifespan(app: FastAPI):
 
 # Register the lifespan event handler
 app.lifespan = lifespan
+
+# Define the endpoint to get the top 10 provider NPIs by net fees
+@app.get("/top-providers/")
+async def get_top_providers(session: Session = Depends(get_session)):
+    try:
+        # Query to calculate the sum of net_fee for each provider_npi
+        results = (
+            session.query(Claim.provider_npi, func.sum(Claim.net_fee).label("total_net_fee"))
+            .group_by(Claim.provider_npi)
+            .order_by(func.sum(Claim.net_fee).desc())
+            .limit(10)
+            .all()
+        )
+
+        # Prepare the response as a list of dictionaries
+        top_providers = [
+            {"provider_npi": provider_npi, "total_net_fee": total_net_fee}
+            for provider_npi, total_net_fee in results
+        ]
+
+        return {"top_providers": top_providers}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Endpoint to process and store the claim
 @app.post("/claims/")

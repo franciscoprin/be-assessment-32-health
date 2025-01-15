@@ -173,3 +173,29 @@ def test_process_claim_missing_fields(session):
     total_claims = len(results)
 
     assert total_claims == 0
+
+# Test function for the get_top_providers endpoint
+def test_get_top_providers_with_duplicate_providers(insert_sample_data, session):
+
+    # Send GET request to the /top-providers/ endpoint
+    response = client.get("/top-providers/")
+
+    # Assert that the response status code is 200 (OK)
+    assert response.status_code == 200
+
+    # Assert that the response JSON contains the correct data structure
+    data = response.json()
+    assert "top_providers" in data
+    assert len(data["top_providers"]) == 10  # Ensure 10 providers are returned
+
+    # Check that the first provider has the highest net fee (including duplicated NPI)
+    assert data["top_providers"][0]["provider_npi"] == "1234567890"
+    assert data["top_providers"][0]["total_net_fee"] == 7000.0  # Sum of 5000.0 + 2000.0
+
+    # Check that the second provider is the one with the next highest net fee (including duplicated NPI)
+    assert data["top_providers"][1]["provider_npi"] == "2345678901"
+    assert data["top_providers"][1]["total_net_fee"] == 5500.0  # Sum of 4500.0 + 1000.0
+
+    # Check that the last provider has the lowest net fee
+    assert data["top_providers"][-1]["provider_npi"] == "7890123456"
+    assert data["top_providers"][-1]["total_net_fee"] == 2000
