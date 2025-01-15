@@ -1,13 +1,27 @@
 from fastapi import FastAPI, HTTPException, Depends
-from app.app_types import ClaimPayload
-from app.database import get_session, init_db
-from app.models import Claim
+try:
+    from app.app_types import ClaimPayload
+    from app.database import get_session, init_db
+    from app.models import Claim
+except ModuleNotFoundError:
+    from app_types import ClaimPayload
+    from database import get_session, init_db
+    from models import Claim
 from sqlalchemy import func
 from sqlmodel import Session
 from contextlib import asynccontextmanager
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
+from starlette.requests import Request
+
+# Initialize the rate limiter
+limiter = Limiter(key_func=get_remote_address)
 
 # Create an instance of the FastAPI class
 app = FastAPI()
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -21,7 +35,8 @@ app.lifespan = lifespan
 
 # Define the endpoint to get the top 10 provider NPIs by net fees
 @app.get("/top-providers/")
-async def get_top_providers(session: Session = Depends(get_session)):
+@limiter.limit("10/minute")  # Rate limit: 10 requests per minute
+async def get_top_providers(request: Request, session: Session = Depends(get_session)):
     try:
         # Query to calculate the sum of net_fee for each provider_npi
         results = (
@@ -40,6 +55,8 @@ async def get_top_providers(session: Session = Depends(get_session)):
 
         return {"top_providers": top_providers}
 
+    except RateLimitExceeded:
+        raise HTTPException(status_code=429, detail="Rate limit exceeded. Please try again later.")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
